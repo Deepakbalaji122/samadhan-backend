@@ -34,8 +34,13 @@ export function isOtpExpired(expiresAt) {
  * @param {string} otp
  */
 export function sendOtpSms(mobile, otp) {
-  console.log('═══════════════════════════════════════');
-  console.log(`📱 OTP for ${mobile}: ${otp}`);
-  console.log(`⏰ Expires in ${env.OTP_EXPIRY_MINUTES} minutes`);
-  console.log('═══════════════════════════════════════');
+  const line = '═'.repeat(45);
+  process.stdout.write('\n');
+  process.stdout.write(line + '\n');
+  process.stdout.write(`🔐  OTP GENERATED\n`);
+  process.stdout.write(`📱  Mobile  : ${mobile}\n`);
+  process.stdout.write(`🔑  OTP Code: ${otp}\n`);
+  process.stdout.write(`⏰  Expires : ${env.OTP_EXPIRY_MINUTES} minutes\n`);
+  process.stdout.write(line + '\n');
+  process.stdout.write('\n');
 }

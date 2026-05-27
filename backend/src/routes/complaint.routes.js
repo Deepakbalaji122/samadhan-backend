@@ -9,12 +9,13 @@ import {
   getNearbyComplaints,
   getComplaintById,
   updateStatus,
+  beginProcess,
   assignAuthority,
 } from '../controllers/complaint.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { uploadComplaint } from '../middleware/upload.js';
-import { validateCreateComplaint, validateStatusUpdate, validateAssignment } from '../validators/complaint.validator.js';
+import { validateCreateComplaint, validateStatusUpdate, validateBeginProcess, validateAssignment } from '../validators/complaint.validator.js';
 
 const router = Router();
 
@@ -39,8 +40,11 @@ router.get('/', authorize('authority', 'admin'), getComplaints);
 // Single complaint (any authenticated user)
 router.get('/:id', getComplaintById);
 
+// Begin processing (authority only)
+router.put('/:id/begin', authorize('authority'), validate(validateBeginProcess), beginProcess);
+
 // Status update (authority/admin)
-router.put('/:id/status', authorize('authority', 'admin'), validate(validateStatusUpdate), updateStatus);
+router.put('/:id/status', authorize('authority', 'admin'), uploadComplaint.single('resolution_photo'), validate(validateStatusUpdate), updateStatus);
 
 // Assignment (admin only)
 router.put('/:id/assign', authorize('admin'), validate(validateAssignment), assignAuthority);

@@ -240,8 +240,17 @@ export async function getComplaintById(req, res, next) {
  */
 export async function updateStatus(req, res, next) {
   try {
-    const { status, remarks } = req.body;
     const complaintId = parseInt(req.params.id);
+
+    console.log(`[STATUS-UPDATE] ═══ Request received for complaint #${complaintId} ═══`);
+    console.log(`[STATUS-UPDATE] req.body:`, JSON.stringify(req.body));
+    console.log(`[STATUS-UPDATE] req.file:`, req.file ? { filename: req.file.filename, mimetype: req.file.mimetype, size: req.file.size } : 'NO FILE');
+    console.log(`[STATUS-UPDATE] req.user:`, JSON.stringify(req.user));
+
+    const { status, remarks, latitude, longitude } = req.body;
+    const resolution_photo = req.file ? `/uploads/complaints/${req.file.filename}` : null;
+
+    console.log(`[STATUS-UPDATE] Parsed values — status: '${status}', remarks: '${remarks}', lat: '${latitude}', lng: '${longitude}', photo: '${resolution_photo}'`);
 
     // Check if complaint exists
     const existing = ComplaintModel.findById(complaintId);
@@ -257,15 +266,72 @@ export async function updateStatus(req, res, next) {
       }
     }
 
-    const updated = ComplaintModel.updateStatus(complaintId, {
-      status,
-      changed_by_role: req.user.role,
-      changed_by_id: req.user.id,
-      remarks,
-    });
+    try {
+      const updated = ComplaintModel.updateStatus(complaintId, {
+        status,
+        changed_by_role: req.user.role,
+        changed_by_id: req.user.id,
+        remarks,
+        latitude,
+        longitude,
+        resolution_photo
+      });
 
-    return success(res, { complaint: updated }, 'Complaint status/resolution updated successfully.');
+      console.log(`[STATUS-UPDATE] ✅ Success — complaint #${complaintId} updated to '${status}'`);
+      return success(res, { complaint: updated }, 'Complaint status/resolution updated successfully.');
+    } catch (modelErr) {
+      console.error(`[STATUS-UPDATE] ❌ Model error:`, modelErr.message);
+      return error(res, modelErr.message, 400);
+    }
   } catch (err) {
+    console.error(`[STATUS-UPDATE] ❌ Unexpected error:`, err);
+    next(err);
+  }
+}
+
+/**
+ * PUT /api/complaints/:id/begin
+ * Begin processing a complaint (authority only).
+ * Transitions status from Pending → In Progress with GPS + timestamp.
+ */
+export async function beginProcess(req, res, next) {
+  try {
+    const complaintId = parseInt(req.params.id);
+    const { latitude, longitude, notes } = req.body;
+
+    console.log(`[BEGIN-PROCESS] Request for complaint #${complaintId}`);
+    console.log(`[BEGIN-PROCESS] Body:`, JSON.stringify(req.body));
+
+    // Check if complaint exists
+    const existing = ComplaintModel.findById(complaintId);
+    if (!existing) {
+      return error(res, 'Complaint not found.', 404);
+    }
+
+    // Enforce sector checking
+    if (req.user && req.user.role === 'authority') {
+      const authority = AuthorityModel.findById(req.user.id);
+      if (!authority || authority.sector !== existing.sector) {
+        return error(res, `Cannot begin process: Complaint belongs to '${existing.sector}' sector.`, 403);
+      }
+    }
+
+    try {
+      const updated = ComplaintModel.beginProcess(complaintId, {
+        authority_id: req.user.id,
+        latitude,
+        longitude,
+        notes,
+      });
+
+      console.log(`[BEGIN-PROCESS] ✅ Complaint #${complaintId} now In Progress`);
+      return success(res, { complaint: updated }, 'Complaint processing started successfully.');
+    } catch (modelErr) {
+      console.error(`[BEGIN-PROCESS] ❌ Model error:`, modelErr.message);
+      return error(res, modelErr.message, 400);
+    }
+  } catch (err) {
+    console.error(`[BEGIN-PROCESS] ❌ Unexpected error:`, err);
     next(err);
   }
 }

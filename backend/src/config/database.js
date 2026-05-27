@@ -105,10 +105,24 @@ export function initializeDatabase() {
       status TEXT DEFAULT 'Pending' CHECK(status IN ('Pending','In Progress','Resolved','Rejected')),
       priority TEXT DEFAULT 'Medium' CHECK(priority IN ('Low','Medium','High','Critical')),
       assigned_authority_id INTEGER,
+      resolution_photo TEXT,
+      resolution_notes TEXT,
+      resolved_by INTEGER,
+      resolved_at TEXT,
+      resolution_latitude TEXT,
+      resolution_longitude TEXT,
+      resolution_distance_meters REAL,
+      started_at TEXT,
+      started_by INTEGER,
+      process_latitude TEXT,
+      process_longitude TEXT,
+      process_notes TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (citizen_id) REFERENCES citizens(id),
-      FOREIGN KEY (assigned_authority_id) REFERENCES authorities(id)
+      FOREIGN KEY (assigned_authority_id) REFERENCES authorities(id),
+      FOREIGN KEY (resolved_by) REFERENCES authorities(id),
+      FOREIGN KEY (started_by) REFERENCES authorities(id)
     );
 
     -- Complaint status history table
@@ -174,6 +188,28 @@ export function initializeDatabase() {
   if (!hasDistrictC) {
     db.exec("ALTER TABLE complaints ADD COLUMN district TEXT");
     console.log("⚡ Added 'district' column to existing complaints table.");
+  }
+
+  // Add resolution tracking columns
+  if (!columns.some(col => col.name === 'resolution_photo')) {
+    db.exec("ALTER TABLE complaints ADD COLUMN resolution_photo TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN resolution_notes TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN resolved_by INTEGER");
+    db.exec("ALTER TABLE complaints ADD COLUMN resolved_at TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN resolution_latitude TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN resolution_longitude TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN resolution_distance_meters REAL");
+    console.log("⚡ Added 'resolution' tracking columns to existing complaints table.");
+  }
+
+  // Add begin-process tracking columns
+  if (!columns.some(col => col.name === 'started_at')) {
+    db.exec("ALTER TABLE complaints ADD COLUMN started_at TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN started_by INTEGER");
+    db.exec("ALTER TABLE complaints ADD COLUMN process_latitude TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN process_longitude TEXT");
+    db.exec("ALTER TABLE complaints ADD COLUMN process_notes TEXT");
+    console.log("⚡ Added 'begin process' tracking columns to existing complaints table.");
   }
 
   // Safely add missing columns to existing authorities table

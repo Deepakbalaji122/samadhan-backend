@@ -26,11 +26,15 @@ export const reverseGeocode = async (latitude, longitude) => {
       const address = data.address;
       
       // Nominatim might return area/neighborhood in different fields
-      // Fallbacks: suburb -> neighborhood -> city_district -> county
+      // Fallbacks: suburb -> neighborhood -> residential -> city_district -> town -> village -> road -> county
       const area = 
         address.suburb || 
         address.neighbourhood || 
+        address.residential ||
         address.city_district || 
+        address.town ||
+        address.village ||
+        address.road ||
         'Unknown Area';
 
       const pincode = address.postcode || '000000';
@@ -38,10 +42,11 @@ export const reverseGeocode = async (latitude, longitude) => {
       const city = 
         address.city || 
         address.town || 
+        address.municipality ||
         'Unknown City';
 
-      const village = address.village || address.town || address.hamlet || 'Unknown Village';
-      const mandal = address.county || address.suburb || 'Unknown Mandal';
+      const village = address.village || address.town || address.hamlet || address.suburb || 'Unknown Village';
+      const mandal = address.county || address.state_district || address.suburb || 'Unknown Mandal';
       const district = address.state_district || address.state || 'Unknown District';
 
       return {

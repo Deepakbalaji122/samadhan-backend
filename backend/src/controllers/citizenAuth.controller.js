@@ -15,6 +15,7 @@ import { success, error } from '../utils/responseHelper.js';
 export async function sendOtp(req, res, next) {
   try {
     const { mobile } = req.body;
+    console.log(`[OTP] send-otp hit for mobile: ${mobile}`);
 
     // Check if citizen exists (for login)
     const citizen = CitizenModel.findByMobile(mobile);
@@ -101,6 +102,7 @@ export async function verifyOtp(req, res, next) {
 export async function signup(req, res, next) {
   try {
     const { full_name, mobile, area, pincode, preferred_language } = req.body;
+    console.log(`[OTP] signup hit for mobile: ${mobile}`);
 
     // Check if citizen already exists
     const existing = CitizenModel.findByMobile(mobile);

@@ -29,13 +29,46 @@ export function validateCreateComplaint(body) {
 
 /**
  * Validate complaint status update.
+ * Normalizes status to Title Case before validation (e.g., 'resolved' -> 'Resolved').
  */
 export function validateStatusUpdate(body) {
   const errors = [];
 
+  // Normalize common frontend status values to DB-compatible Title Case
+  const statusMap = {
+    'pending': 'Pending',
+    'in_progress': 'In Progress',
+    'in progress': 'In Progress',
+    'resolved': 'Resolved',
+    'rejected': 'Rejected',
+  };
+
   const validStatuses = ['Pending', 'In Progress', 'Resolved', 'Rejected'];
+
+  if (body.status) {
+    const normalized = statusMap[body.status.toLowerCase()] || body.status;
+    body.status = normalized; // mutate body so controller receives normalized value
+  }
+
   if (!body.status || !validStatuses.includes(body.status)) {
     errors.push(`Status must be one of: ${validStatuses.join(', ')}`);
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validate begin process request.
+ */
+export function validateBeginProcess(body) {
+  const errors = [];
+
+  // latitude and longitude are optional but recommended
+  if (body.latitude && isNaN(parseFloat(body.latitude))) {
+    errors.push('Latitude must be a valid number.');
+  }
+  if (body.longitude && isNaN(parseFloat(body.longitude))) {
+    errors.push('Longitude must be a valid number.');
   }
 
   return { isValid: errors.length === 0, errors };
